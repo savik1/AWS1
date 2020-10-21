@@ -1,0 +1,117 @@
+---
+- name: Create a sandbox instance
+  hosts: localhost
+  gather_facts: False
+  vars:
+    keypair: aws1    
+    instance_type: t2.micro
+    security_group: webserver
+    image: ami-092391a11f8aa4b7b
+    region: us-east-1
+    
+  tasks:
+    - name: Create a security group
+      local_action:
+        module: ec2_group
+        name: "{{ security_group }}"
+        description: Security Group for webserver Servers
+        region: "{{ region }}"
+        rules:
+          - proto: tcp
+            type: ssh
+            from_port: 22
+            to_port: 22
+            cidr_ip: 0.0.0.0/0
+          - proto: tcp
+            from_port: 80
+            to_port: 80
+            cidr_ip: 0.0.0.0/0
+          - proto: tcp
+            from_port: 8080
+            to_port: 8080
+            cidr_ip: 0.0.0.0/0
+        rules_egress:
+          - proto: all
+            type: all
+            cidr_ip: 0.0.0.0/0
+            
+    - name: Launch build instance
+        amazon.aws.ec2:
+            key_name={{ keypair }}
+            instance_type={{ instance_type }}
+            image={{ image }}
+            wait=true
+            region={{ region }}
+            assign_public_ip=no
+            group= launch-wizard-1
+        register: ec2
+
+    - name: Add new instance to host group
+      add_host:
+        hostname: "{{ item.public_ip }}"
+        groupname: build
+      loop: "{{ ec2.instances }}"
+
+    - name: Wait for SSH to come up
+      delegate_to: "{{ item.public_dns_name }}"
+      wait_for_connection:
+        delay: 60
+        timeout: 320
+      loop: "{{ ec2.instances }}"
+
+    - name: Launch web instance
+      amazon.aws.ec2:
+         key_name: "{{ keypair }}"
+         instance_type: "{{ instance_type }}"
+         image: "{{ image }}"
+         wait: true
+
+    - name: Configure build instance
+    hosts: build
+    become: True
+    gather_facts: True
+    tasks:
+    - name: Ensure default-jdk pkg is present
+        apt:
+        name: default-jdk
+        state: present
+    - name: Ensure Maven pkg is present
+        apt:
+        name: maven
+        state: present
+    - name: Ensure git pkg is present
+        apt:
+        name: git
+        state: present
+    - name: Clone Repository
+        git:
+        repo: https://github.com/boxfuse/boxfuse-sample-java-war-hello.git
+        dest: /home/sampleTest/
+    - name: Change the working directory and run mvn
+        command: mvn package
+        args:
+        chdir: /home/sampleTest/
+    - name: copy file from db to local
+        fetch:
+        src: /home/sampleTest/target/hello-1.0.war
+        dest: /tmp/hello-1.0.war
+        flat: yes
+
+
+    - name: Configure web instance
+    hosts: web
+    become: True
+    gather_facts: True
+    tasks:
+    - name: Ensure default-jdk pkg is present
+        apt:
+        name: default-jdk
+        state: present
+    - name: Ensure tomcat pkg is present
+        apt:
+        name: tomcat8
+        state: present
+    - name: copy file from local to web
+        copy:
+        src: /tmp/hello-1.0.war
+        dest: /var/lib/tomcat8/webapps/hello-1.0.war
