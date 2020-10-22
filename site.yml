@@ -76,51 +76,51 @@
         groupname: web
       loop: "{{ ec2.instances }}"
       
-    - name: Configure build instance
-      hosts: build
-      become: True
-      gather_facts: True
-      tasks:
-        - name: Ensure default-jdk pkg is present
-          apt:
-            name: default-jdk
-            state: present
-        - name: Ensure Maven pkg is present
-          apt:
-            name: maven
-            state: present
-        - name: Ensure git pkg is present
-          apt:
-            name: git
-            state: present
-        - name: Clone Repository
-          git:
-            repo: https://github.com/boxfuse/boxfuse-sample-java-war-hello.git
-            dest: /home/sampleTest/
-        - name: Change the working directory and run mvn
-          command: mvn package
-          args:
-            chdir: /home/sampleTest/
-        - name: copy file from db to local
-          fetch:
-            src: /home/sampleTest/target/hello-1.0.war
-            dest: /tmp/hello-1.0.war
-            flat: yes
+- name: Configure build instance
+  hosts: build
+  become: True
+  gather_facts: True
+  tasks:
+    - name: Ensure default-jdk pkg is present
+      apt:
+        name: default-jdk
+        state: present
+    - name: Ensure Maven pkg is present
+      apt:
+        name: maven
+        state: present
+    - name: Ensure git pkg is present
+      apt:
+        name: git
+        state: present
+    - name: Clone Repository
+      git:
+        repo: https://github.com/boxfuse/boxfuse-sample-java-war-hello.git
+        dest: /home/sampleTest/
+    - name: Change the working directory and run mvn
+      command: mvn package
+      args:
+        chdir: /home/sampleTest/
+    - name: copy file from db to local
+      fetch:
+        src: /home/sampleTest/target/hello-1.0.war
+        dest: /tmp/hello-1.0.war
+        flat: yes
 
-    - name: Configure web instance
-      hosts: web
-      become: True
-      gather_facts: True
-      tasks:
-        - name: Ensure default-jdk pkg is present
-          apt:
-            name: default-jdk
-            state: present
-        - name: Ensure tomcat pkg is present
-          apt:
-            name: tomcat8
-            state: present
-        - name: copy file from local to web
-          copy:
-            src: /tmp/hello-1.0.war
-            dest: /var/lib/tomcat8/webapps/hello-1.0.war
+- name: Configure web instance
+  hosts: web
+  become: True
+  gather_facts: True
+  tasks:
+    - name: Ensure default-jdk pkg is present
+      apt:
+        name: default-jdk
+        state: present
+    - name: Ensure tomcat pkg is present
+      apt:
+        name: tomcat8
+        state: present
+    - name: copy file from local to web
+      copy:
+        src: /tmp/hello-1.0.war
+        dest: /var/lib/tomcat8/webapps/hello-1.0.war
