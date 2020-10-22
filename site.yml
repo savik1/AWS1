@@ -9,11 +9,6 @@
     security_group: webserver
     image: ami-092391a11f8aa4b7b
     region: us-east-1
-    aws_access_key: 
-    aws_secret_key:
-    
-aws_access_key: "{{ aws_access_key }}"
-aws_secret_key: "{{ aws_access_key }}"
     
   tasks:
     - name: Create a security group
@@ -22,8 +17,6 @@ aws_secret_key: "{{ aws_access_key }}"
         name: "{{ security_group }}"
         description: Security Group for webserver Servers
         region: "{{ region }}"
-        aws_access_key: "{{ aws_access_key }}"
-        aws_secret_key: "{{ aws_access_key }}"
         rules:
           - proto: tcp
             from_port: 22
@@ -38,7 +31,11 @@ aws_secret_key: "{{ aws_access_key }}"
             to_port: 8080
             cidr_ip: 0.0.0.0/0
         rules_egress:
+          - proto: tcp
+            from_port: 8080
+            to_port: 8080
             cidr_ip: 0.0.0.0/0
+
             
     - name: Launch build instance
       ec2:
@@ -49,8 +46,6 @@ aws_secret_key: "{{ aws_access_key }}"
           region: "{{ region }}"
           assign_public_ip: no
           group: launch-wizard-1
-          aws_access_key: "{{ aws_access_key }}"
-          aws_secret_key: "{{ aws_access_key }}"
       register: ec2
 
     - name: Add new instance to host group
@@ -75,8 +70,6 @@ aws_secret_key: "{{ aws_access_key }}"
          region: "{{ region }}"
          assign_public_ip: yes
          group: "{{ security_group }}"
-         aws_access_key: "{{ aws_access_key }}"
-         aws_secret_key: "{{ aws_access_key }}"
       register: ec2
          
     - name: Add new instance to host group
