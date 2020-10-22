@@ -100,7 +100,7 @@
       - name: Change the working directory and run mvn
         command: mvn package
           args:
-          chdir: /home/sampleTest/
+            chdir: /home/sampleTest/
       - name: copy file from db to local
         fetch:
           src: /home/sampleTest/target/hello-1.0.war
