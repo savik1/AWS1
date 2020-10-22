@@ -1,6 +1,7 @@
 ---
 - name: Create 2 instance - build and web
-  hosts: localhost
+  hosts: local
+  connection: local
   gather_facts: False
   vars:
     keypair: aws1    
@@ -18,7 +19,6 @@
         region: "{{ region }}"
         rules:
           - proto: tcp
-            type: ssh
             from_port: 22
             to_port: 22
             cidr_ip: 0.0.0.0/0
@@ -31,8 +31,6 @@
             to_port: 8080
             cidr_ip: 0.0.0.0/0
         rules_egress:
-          - proto: all
-            type: all
             cidr_ip: 0.0.0.0/0
             
     - name: Launch build instance
